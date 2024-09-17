@@ -1,61 +1,91 @@
 
 
-def step(state):
+
+# эта функция строит состояние из количества камней в кучах a и b, и истории шагов h
+def get_state(a, b, h):
+    return [a, b, h + ' -> (' +str(a) + ',' + str(b) + ')']
+
+# эта функция возвращает список возможных ходов из состояния state
+def player_step(state):
     first_heap = state[0]    
     second_heap = state[1]
     history = state[2]
-    next_step1 = [first_heap + 1, second_heap, history+'0']
-    next_step2 = [first_heap * 2, second_heap, history+'1']
-    next_step3 = [first_heap, second_heap + 1, history+'2']
-    next_step4 = [first_heap, second_heap * 2, history+'3']
+    next_step1 = get_state(first_heap + 1, second_heap, history)
+    next_step2 = get_state(first_heap * 2, second_heap, history)
+    next_step3 = get_state(first_heap, second_heap + 1, history)
+    next_step4 = get_state(first_heap, second_heap * 2, history)
     return [next_step1, next_step2, next_step3, next_step4]
 
+# функция проверяет, закончилась ли игра состоянием state
 def win(state):
     first_heap = state[0]    
     second_heap = state[1]
     result = (first_heap + second_heap >= 77)
     return result
 
+# основная функция - проверяет выполняется ли условие задачи для начального состояния initial_state
 def check_state(initial_state):
     
     # первый ход делает Петя
-    petay_steps = step(initial_state)
+    # находим все возможные ходы Пети
+    petay_steps = player_step(initial_state)
 
-    for s in petay_steps:
-        if win(s):
-            return None
+    # проверяем, если Петя может выиграть первым ходом, то это противоречит условию задачи и такое начальное сотояние не подходит
+    for ps in petay_steps:
+        if win(ps):
+            print('Есть первый выигрышный ход:', ps[2])
+            return False
         
-    # второй ход делает Ваня
-    
-    vanya_steps = []
-    for s in petay_steps:
-        vs = step(s)
-        vanya_steps.extend(vs)
-        
-    for s in vanya_steps:
-        if win(s):
-            return None
-        
-    # третий ход опять Петя
-    petay_steps2 = []
-    for s in vanya_steps:
-        there_is_a_win = False
-        for ps in step(s):
-            if win(ps):
-                there_is_a_win = True
+    # проверяем ходы Пети по одному
+    for ps in petay_steps:
+        # второй ход делает Ваня
+        # находим все возможные ходы Вани
+        vanya_steps = player_step(ps)
+
+        # проверяем, если Ваня может выиграть, то нам такой ход Пети не подходит, переходим к следующему ходу Пети
+        vanya_can_win = False
+        example = []
+        for vs in vanya_steps:
+            if win(vs):
+                vanya_can_win = True
+                example = vs
                 break
-        if not there_is_a_win:
-            return None
+        if vanya_can_win:
+            print(example[2], 'Ваня может выиграть')
+            continue
+
+        # ищем, для любого хода Вани у Пети должен быть выигрышный ход
+        win_states = 0
+        example = []
+        for vs in vanya_steps:
+            petay_last_steps = player_step(vs)
+            for pls in petay_last_steps:
+                if win(pls):
+                    win_states += 1
+                    example = pls
+                    break
+        if win_states == len(vanya_steps):
+            return True, example[2]
         
-    return 1
+        print(ps[2], 'Нет выигрыша для', len(vanya_steps) - win_states, 'ходов Вани')
+
+    return False        
     
-    
+solution = ''
 for S in range(1, 70):
-    initial_state = [7, S, '']
+    print('')
+    print('Проверяем S =', S)
+    initial_state = [7, S, '(7,' + str(S) + ')']
     result = check_state(initial_state)
-    if result is not None:
-        print(S)
+    if result:
+        solution += 'S = ' + str(S) + ': ' + result[1] + '\n'
         
+print('')
+if solution:
+    print('Выигрышная стратегия существует для следующих S:')
+    print(solution)
+else:
+    print('Выигрышная стратегия не найдена')
 
         
         
